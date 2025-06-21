@@ -1,0 +1,35 @@
+'''
+only dummy data for testing purposes later will be rplaced by database
+'''
+products_db = {
+    "Oat milk": {"id": 1, "name": "Oat Milk", "price": 3.5, "vegan": True, "ingredients": ["water", "oats", "salt", "vitamin d", "calcium carbonate"]},
+    "Almond Butter": {"id": 2, "name": "Almond Butter", "price": 6.0, "vegan": True, "ingredients": ["almonds", "salt"]},
+    "Greek Yogurt": {"id": 3, "name": "Greek Yogurt", "price": 4.0, "vegan": False, "ingredients": ["milk", "bacterial cultures"]},
+    "Eggless Mayo": {"id": 4, "name": "Eggless Mayo", "price": 3.0, "vegan": True, "ingredients": ["soybean oil", "vinegar", "mustard", "lemon juice"]},
+    "Multigrain Bread": {"id": 5, "name": "Multigrain Bread", "price": 2.5, "vegan": True, "ingredients": ["whole wheat flour", "barley", "rye", "oats", "yeast", "salt"]},
+    "Cheddar Cheese": {"id": 6, "name": "Cheddar Cheese", "price": 5.0, "vegan": False, "ingredients": ["milk", "rennet", "salt"]},
+    "Tofu": {"id": 7, "name": "Tofu", "price": 2.2, "vegan": True, "ingredients": ["soybeans", "water", "calcium sulfate"]},
+    "Chicken Nuggets": {"id": 8, "name": "Chicken Nuggets", "price": 7.0, "vegan": False, "ingredients": ["chicken", "breadcrumbs", "salt", "spices"]},
+    "Vegan Protein Powder": {"id": 9, "name": "Vegan Protein Powder", "price": 25.0, "vegan": True, "ingredients": ["pea protein", "brown rice protein", "cocoa", "stevia"]},
+    "Chocolate Ice Cream": {"id": 10, "name": "Chocolate Ice Cream", "price": 4.5, "vegan": False, "ingredients": ["milk", "cream", "sugar", "cocoa"]},
+    "Lentils": {"id": 11, "name": "Lentils", "price": 1.8, "vegan": True, "ingredients": ["lentils"]},
+    "Brown Rice": {"id": 12, "name": "Brown Rice", "price": 2.0, "vegan": True, "ingredients": ["brown rice"]},
+    "Coconut Yogurt": {"id": 13, "name": "Coconut Yogurt", "price": 4.2, "vegan": True, "ingredients": ["coconut milk", "probiotic cultures"]},
+    "Whole Eggs": {"id": 14, "name": "Whole Eggs", "price": 3.2, "vegan": False, "ingredients": ["eggs"]},
+    "Cashew Cheese": {"id": 15, "name": "Cashew Cheese", "price": 6.5, "vegan": True, "ingredients": ["cashews", "nutritional yeast", "lemon", "garlic"]},
+    "Salmon Fillet": {"id": 16, "name": "Salmon Fillet", "price": 12.0, "vegan": False, "ingredients": ["salmon"]},
+    "Soy Milk": {"id": 17, "name": "Soy Milk", "price": 3.0, "vegan": True, "ingredients": ["water", "soybeans", "calcium carbonate"]},
+    "Veggie Burger": {"id": 18, "name": "Veggie Burger", "price": 5.5, "vegan": True, "ingredients": ["black beans", "quinoa", "onion", "spices"]},
+    "Beef Steak": {"id": 19, "name": "Beef Steak", "price": 13.0, "vegan": False, "ingredients": ["beef"]},
+    "Avocado": {"id": 20, "name": "Avocado", "price": 1.2, "vegan": True, "ingredients": ["avocado"]},
+    "Peanut Butter": {"id": 21, "name": "Peanut Butter", "price": 4.0, "vegan": True, "ingredients": ["peanuts", "salt"]},
+    "Mozzarella Cheese": {"id": 22, "name": "Mozzarella Cheese", "price": 4.8, "vegan": False, "ingredients": ["milk", "salt", "rennet"]},
+    "Chia Seeds": {"id": 23, "name": "Chia Seeds", "price": 2.5, "vegan": True, "ingredients": ["chia seeds"]},
+    "Honey": {"id": 24, "name": "Honey", "price": 3.3, "vegan": False, "ingredients": ["honey"]},
+    "Spinach": {"id": 25, "name": "Spinach", "price": 1.0, "vegan": True, "ingredients": ["spinach"]},
+    "Tempeh": {"id": 26, "name": "Tempeh", "price": 3.5, "vegan": True, "ingredients": ["fermented soybeans"]},
+    "Raspberry Jam": {"id": 27, "name": "Raspberry Jam", "price": 2.6, "vegan": True, "ingredients": ["raspberries", "sugar", "pectin"]},
+    "Butter": {"id": 28, "name": "Butter", "price": 3.0, "vegan": False, "ingredients": ["cream", "salt"]},
+    "Coconut Milk": {"id": 29, "name": "Coconut Milk", "price": 2.7, "vegan": True, "ingredients": ["coconut", "water"]},
+    "Seitan": {"id": 30, "name": "Seitan", "price": 4.1, "vegan": True, "ingredients": ["wheat gluten", "soy sauce", "garlic"]}
+}
