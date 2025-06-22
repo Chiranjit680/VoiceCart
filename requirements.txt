@@ -1,0 +1,7 @@
+whisper
+langchain
+langchain_google_genai
+torch
+ffmpeg-python
+langchain_core
+langgraph

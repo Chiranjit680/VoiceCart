@@ -11,6 +11,7 @@ from dummydb import products_db
 # Add these lines at the top of your file
 import sys
 import os
+from agent_main import llm
 
 # Add the parent directory to the path to find modules
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -36,12 +37,7 @@ allergen_keywords = {
 }
 
 # ------------------ LLM --------------------
-llm = ChatGoogleGenerativeAI(
-    model="gemini-2.0-flash-exp",
-    google_api_key=gemini_api_key,
-    temperature=0.7,
-    max_output_tokens=1024
-)
+
 
 # ------------------ Tools --------------------
 @tool
@@ -122,18 +118,23 @@ def check_budget(input_data: str) -> str:
     if not isinstance(shopping_list, list):
         return "Error: shopping_list must be a list."
     
+    # Convert all items to strings to prevent joining issues
+    shopping_list = [str(item) for item in shopping_list]
+    
     total_cost = 0.0
     missing_items = []
 
     for item in shopping_list:
-        item_name = str(item).lower()
+        item_name = item.lower()
         if item_name in products_db:
             total_cost += products_db[item_name]["price"]
         else:
-            missing_items.append(item)
+            missing_items.append(item)  # This should be a string now
 
     if missing_items:
-        return f"⚠️ Items not found: {', '.join(missing_items)}"
+        # Convert any non-string items to strings before joining
+        missing_items_str = [str(item) for item in missing_items]
+        return f"⚠️ Items not found: {', '.join(missing_items_str)}"
 
     if total_cost > budget:
         return f"❌ Budget exceeded! Limit: ${budget}, Cost: ${total_cost:.2f}"
@@ -213,24 +214,36 @@ Question: {input}
 )
 
 # ------------------ Agent + Executor --------------------
-agent = create_react_agent(
+def create_react_agent(llm=llm):
+    """
+    Create a ReAct agent with the given LLM, tools, and prompt.
+    """
+   
+    
+    agent = create_react_agent(
     llm=llm,
     tools=tools,
     prompt=prompt
-)
+    )
 
-agent_exec = AgentExecutor(
+    agent_exec = AgentExecutor(
     agent=agent,
     tools=tools,
     verbose=True,
     return_intermediate_steps=True,
     max_iterations=5
-)
+        )
+    return agent_exec
 
-# ------------------ Test Run --------------------
+# ------------------ Main Function for testing --------------------
 if __name__ == "__main__":
-    response = agent_exec.invoke({
-        "input": "Create a vegan shopping list for dinner for $15. Check for nuts and dairy."
-    })
-    
+    shopping_agent= create_react_agent()
+    response=shopping_agent.invoke(
+        {
+            "input": "I want to buy some groceries for the week. I need items for breakfast, lunch, and dinner. My budget is $50. I am allergic to nuts and dairy, and I prefer vegan options.",
+            "agent_scratchpad": ""
+        }
+    )
     print(response["output"])
+    
+
