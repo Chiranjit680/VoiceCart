@@ -12,5 +12,4 @@ class CartCreate(BaseModel):
     quantity: int
 
 class CartOut(CartCreate):
-    id: int
     user_id: int

@@ -3,8 +3,16 @@
 ## Backend Routes
 
 1. **/user** : contains methods for login, logout, editing profile, etc. -- login allowed with email and password, or phone and password.
+   - register
+   - get
+   - login
 2. **/product** : contains methods for posting/removing product, retrieving information, checking stock, etc.
 3. **/cart** : viewing items, adding items, checkout, removing items, etc.
+   - add to cart
+   - remove from cart
+   - view cart
+   - edit cart
+   - checkout -- incomplete
 4. **/orders** : view previous / current orders, track current orders, etc
 5. **/search** : search for products
 
