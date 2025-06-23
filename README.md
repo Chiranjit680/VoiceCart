@@ -36,7 +36,7 @@
 
 Contributors:
 1. Chiranjit Saha (Agentic AI Engineer)
-2. Anvesh Shrivastava (Backend Engineer)
+2. Anvesh Shrivastava (Backend and Database Engineer)
 3. Swastika Khan (ML Engineer)
 4. Bhaumik Khandela (Frontend & Blockchain Engineer)
 
