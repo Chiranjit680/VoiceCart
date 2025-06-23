@@ -17,3 +17,4 @@ jose
 oauth2
 mysql-connector-python
 pymysql
+passlib[sha256]
