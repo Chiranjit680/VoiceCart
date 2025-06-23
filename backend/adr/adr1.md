@@ -9,11 +9,17 @@
 2. **/product** : contains methods for posting/removing product, retrieving information, checking stock, etc.
 3. **/cart** : viewing items, adding items, checkout, removing items, etc.
    - add to cart
-   - remove from cart
+   - delete from cart
+   - update cart
    - view cart
    - edit cart
-   - checkout -- incomplete
+   - checkout -- transaction with payment gateway remaining to be implemented
+   - clear cart
 4. **/orders** : view previous / current orders, track current orders, etc
+   - view orders
+   - update order status
+   - view specific order
+   - create order -- only through checkout from cart
 5. **/search** : search for products
 
 
@@ -64,6 +70,7 @@ removed <!-- * category: list[category_id]: Foreign Keys --> from product table 
 * total_amount: float or decimal(10,2)
 * status: varchar (e.g., 'pending', 'shipped', 'delivered', 'cancelled')
 * created_at: timestamp default = now()
+* address: text
 
 #### order_items
 * id: int Primary Key // not required if using order_id and product_id as composite key

@@ -60,9 +60,24 @@ def update_cart_item(product_id: int, cart_item: schemas.CartCreate, db: Session
     db.refresh(existing_item)
     return existing_item
 
+@router.get("/cost", response_model=float)
+def get_cart_cost(db: Session = Depends(database.get_db), current_user: int = Depends(oauth2.get_current_user)):
+    cart_items = db.query(models.Cart).filter(models.Cart.user_id == current_user.id).all()
+    if not cart_items:
+        return 0.0      
+    total_cost = 0.0
+    for item in cart_items:
+        product = db.query(models.Product).filter(models.Product.id == item.product_id).first()
+        if product:
+            total_cost += product.price * item.quantity
+        else:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Product with id {item.product_id} not found")
+    
+    return total_cost
+
 # dummy checkout endpoint
 @router.post("/checkout", status_code=status.HTTP_200_OK)
-def checkout(db: Session = Depends(database.get_db), current_user: int = Depends(oauth2.get_current_user)):
+def checkout(address: str, db: Session = Depends(database.get_db), current_user: int = Depends(oauth2.get_current_user)):
     cart_items = db.query(models.Cart).filter(models.Cart.user_id == current_user.id).all()
     if not cart_items:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cart is empty")
@@ -70,16 +85,28 @@ def checkout(db: Session = Depends(database.get_db), current_user: int = Depends
     for item in cart_items:
         if models.product.stock < item.quantity:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Not enough stock for product {item.product_id}")
+        
+    total_amount = get_cart_cost(db, current_user)
     
     # Here you would typically process the payment and create an order
     # TODO: Implement payment processing logic
     # For now, we will just clear the cart
 
-    for item in cart_items:
-        db.query(models.product).filter(models.product.id == item.product_id).update({"stock": models.product.stock - item.quantity})  # Update stock based on cart items
-        db.delete(item)
-
-    orders.create_order(db, current_user.id, cart_items)  # TODO check it
+    order = schemas.OrderCreate(address=address, total_amount = total_amount)
+    
+    orders.create_order(address = address, total_amount=total_amount, db = db, current_user= current_user)
     
     db.commit()
     return {"detail": "Checkout successful, cart cleared"}
+
+@router.delete("/clear", status_code=status.HTTP_204_NO_CONTENT)
+def clear_cart(db: Session = Depends(database.get_db), current_user: int = Depends(oauth2.get_current_user)):
+    cart_items = db.query(models.Cart).filter(models.Cart.user_id == current_user.id).all()
+    if not cart_items:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cart is already empty")
+    
+    for item in cart_items:
+        db.delete(item)
+    
+    db.commit()
+    return {"detail": "Cart cleared successfully"} 
