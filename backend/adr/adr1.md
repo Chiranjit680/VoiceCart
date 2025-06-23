@@ -6,7 +6,7 @@
 2. **/product** : contains methods for posting/removing product, retrieving information, checking stock, etc.
 3. **/cart** : viewing items, adding items, checkout, removing items, etc.
 4. **/orders** : view previous / current orders, track current orders, etc
-5. **/products** : search for products
+5. **/search** : search for products
 
 
 ## Database Schemas

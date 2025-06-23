@@ -1,0 +1,6 @@
+please refer this file for selecting file for architectural decisions
+
+adr1: general schema, which is already accepted or being worked on
+adr2: propositions for general schema
+adr3: endpoints required for frontend team
+adr4: endpoints required for ml team
