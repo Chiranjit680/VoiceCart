@@ -5,6 +5,7 @@ torch
 ffmpeg-python
 langchain_core
 langgraph
+requests
 
 fastapi[all]
 uvicorn
