@@ -195,5 +195,5 @@ cython_debug/
 
 
 # Added by Anvesh
-.vscode
+.vscode/
 .vscode/settings.json
