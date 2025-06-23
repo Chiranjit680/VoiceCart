@@ -55,9 +55,6 @@ def search_recipes(input_data: str) -> str:
             "fillIngredients": True
         }
         response = requests.get(url, params=params)
-        # Print the actual URL and response text for debugging
-        print("API URL:", response.url)
-        print("API Response:", response.text)
         response.raise_for_status()
         
         data = response.json()
@@ -362,8 +359,8 @@ def build_recipe_agent(llm=llm):
     agent_exec = AgentExecutor(
         agent=agent,
         tools=tools,
-        verbose=True,
-        return_intermediate_steps=True,
+        verbose=False,  # Hide intermediate steps
+        return_intermediate_steps=False,  # Only return final output
         max_iterations=10,
         handle_parsing_errors=True
     )
