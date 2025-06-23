@@ -5,3 +5,16 @@ torch
 ffmpeg-python
 langchain_core
 langgraph
+
+fastapi[all]
+uvicorn
+pydantic
+httpx
+sqlalchemy
+bcrypt
+jwt
+jose
+oauth2
+mysql-connector-python
+pymysql
+passlib[sha256]

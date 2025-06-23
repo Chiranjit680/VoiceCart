@@ -214,7 +214,7 @@ Question: {input}
 )
 
 # ------------------ Agent + Executor --------------------
-def build_react_agent(llm=llm):
+def initialize_react_agent(llm=llm):
     """
     Create a ReAct agent with the given LLM, tools, and prompt.
     """
@@ -231,13 +231,13 @@ def build_react_agent(llm=llm):
     tools=tools,
     verbose=True,
     return_intermediate_steps=True,
-    max_iterations=5
+    max_iterations=10
         )
     return agent_exec
 
 # ------------------ Main Function for testing --------------------
 if __name__ == "__main__":
-    shopping_agent= build_react_agent()
+    shopping_agent= initialize_react_agent()
     response=shopping_agent.invoke(
         {
             "input": "I want to buy some groceries for the week. I need items for breakfast, lunch, and dinner. My budget is $50. I am allergic to nuts and dairy, and I prefer vegan options.",
