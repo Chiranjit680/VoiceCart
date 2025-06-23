@@ -16,3 +16,4 @@ jwt
 jose
 oauth2
 mysql-connector-python
+pymysql
