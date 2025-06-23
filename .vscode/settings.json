@@ -1,5 +1,10 @@
 {
     "cSpell.words": [
+        "fastapi",
+        "httpx",
+        "pydantic",
+        "sqlalchemy",
+        "uvicorn",
         "varchar"
     ]
 }

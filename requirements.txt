@@ -5,3 +5,11 @@ torch
 ffmpeg-python
 langchain_core
 langgraph
+
+fastapi[all]
+uvicorn
+pydantic
+httpx
+sqlalchemy
+bcrypt
+jwt
