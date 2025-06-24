@@ -39,7 +39,8 @@ class User(UserOut):
 # --- Product Schemas ---
 class ProductCreate(BaseModel):
     name: str
-    description: Optional[Dict[str, str]] = None  # JSON field
+    description: Optional[str] = None
+    specs: Optional[Dict[str, str]] = None  # JSON field
     price: float
     for_sale: Optional[bool] = True
     stock: Optional[int] = 0
@@ -48,7 +49,8 @@ class ProductCreate(BaseModel):
 class ProductOut(BaseModel):
     id: int
     name: str
-    description: Optional[Dict[str, str]] = None
+    description: Optional[str] = None
+    specs: Optional[Dict[str, str]] = None 
     price: float
     for_sale: bool
     stock: int

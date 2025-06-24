@@ -52,7 +52,8 @@
 #### product
 * id: int Primary Key
 * name: varchar
-* description: json -- a json file containing details 
+* description: string
+* specs: json
 * price: float or decimal(10,2)
 * for_sale: boolean default = true
 * stock: int

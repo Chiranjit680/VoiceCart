@@ -26,7 +26,8 @@ class Product(Base):
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True, nullable=False)
     name = Column(String, nullable=False)
-    description = Column(JSON, nullable=True, server_default=None)
+    description = Column(String, nullable=True, server_default=None)
+    specs = Column(JSON, nullable=True, server_default=None)
     price = Column(DECIMAL(precision=10, scale=2), nullable=False) # price is currently not nullable, # but it can be changed in the future
     for_sale = Column(Boolean, default=True, nullable=False)
     stock = Column(Integer, default=0, nullable=False)
