@@ -2,10 +2,12 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from .config import settings
+from dotenv import load_dotenv
+load_dotenv()
 
-SQL_ALCHEMY_DATABASE_URL = f"mysql+pymysql://{settings.database_username}:{settings.database_password}@{settings.database_hostname}:{settings.database_port}/{settings.database_name}"
+SQL_ALCHEMY_DATABASE_URL= settings.database_url
 
-engine = create_engine(SQL_ALCHEMY_DATABASE_URL)
+engine = create_engine(SQL_ALCHEMY_DATABASE_URL, echo=True)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

@@ -36,7 +36,7 @@ def create_order(address: str, total_amount: float, db: Session = Depends(databa
         address=address,
         total_amount=total_amount,
         status="Pending",
-        products=[item.product_id, item.quantity for item in cart_items]  # Assuming products is a list of product IDs and quantities
+       products=[{"product_id": item.product_id, "quantity": item.quantity} for item in cart_items]  # List of dictionaries# Assuming products is a list of product IDs and quantities
     )
     
     db.add(new_order)

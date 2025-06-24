@@ -1,5 +1,5 @@
 from fastapi.security import OAuth2PasswordRequestForm
-from .. import models, schemas, oauth2
+from .. import models, schemas, oauth2,database
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from ..utils import hashing
@@ -10,7 +10,7 @@ router = APIRouter(
 )
 
 @router.post("/register", status_code = status.HTTP_201_CREATED, response_model=schemas.UserOut)
-def register_user(user: schemas.UserCreate, db: Session = Depends(models.get_db)):
+def register_user(user: schemas.UserCreate, db: Session = Depends(database.get_db)):
     # Hash the password
     hashed_password = hashing.hash(user.password)
     user.password = hashed_password
@@ -23,14 +23,14 @@ def register_user(user: schemas.UserCreate, db: Session = Depends(models.get_db)
     return new_user
 
 @router.get("/{id}", response_model=schemas.UserOut)
-def get_user(id: int, db: Session = Depends(models.get_db), current_user: schemas.UserOut = Depends(oauth2.get_current_user)):
+def get_user(id: int, db: Session = Depends(database.get_db), current_user: schemas.UserOut = Depends(oauth2.get_current_user)):
     user = db.query(models.User).filter(models.User.id == id).first()
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     return user
 
 @router.post("/login", response_model=schemas.Token)
-def login(user_credentials: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(models.get_db)):
+def login(user_credentials: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(database.get_db)):
     user = db.query(models.User).filter(models.User.email == user_credentials.email).first()
     if not user:
         user = db.query(models.User).filter(models.User.phone == user_credentials.email).first()
