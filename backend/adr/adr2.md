@@ -8,3 +8,11 @@ we need to have a field in the 'Product' table which describes every information
 #### Options
 1. Store specs in a text field in the 'Product' table.
 2. Store specs in a blob field in the 'Product' table.
+
+
+### Decision 2: How to store images in the 'Product' table?
+#### Status: Pending
+
+#### Options
+1. Store images as a blob in the 'Product' table.
+2. Store images as a URL in the 'Product' table.

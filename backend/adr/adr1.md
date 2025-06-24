@@ -38,7 +38,7 @@
 #### product
 * id: int Primary Key
 * name: varchar
-* description: text -- a json file containing details 
+* description: json -- a json file containing details 
 * price: float or decimal(10,2)
 * for_sale: boolean default = true
 * stock: int
@@ -54,7 +54,7 @@
 removed <!-- * category: list[category_id]: Foreign Keys --> from product table to allow multiple categories per product
 
 #### product_categories
-* id: int Primary Key // not required if using product_id and category_id as composite key
+<!-- * id: int Primary Key // not required if using product_id and category_id as composite key -->
 * product_id: int Foreign Key (product)
 * category_id: int Foreign Key (categories)
 
@@ -74,7 +74,7 @@ removed <!-- * category: list[category_id]: Foreign Keys --> from product table 
 * address: text
 
 #### order_items
-* id: int Primary Key // not required if using order_id and product_id as composite key
+<!-- * id: int Primary Key // not required if using order_id and product_id as composite key -->
 * order_id: int Foreign Key (orders)
 * product_id: int Foreign Key (product)
 * quantity: int
@@ -85,5 +85,5 @@ removed <!-- * category: list[category_id]: Foreign Keys --> from product table 
 * product_id: int Foreign Key (product)
 * user_id: int Foreign Key (user)
 * rating: int (1-5)
-* description: text
+* comment: text
 * created_at: timestamp default = now()
