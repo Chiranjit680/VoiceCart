@@ -25,21 +25,22 @@
 
 ## Database Schemas
 
-#### user
+#### users
 * id: int Primary Key
 * name: varchar
 * email: varchar Unique
 * password: text
 * phone: varchar Unique
-* address: list[text]
+* address: text --- for the time being, only one address per user, else would have to create a separate address table
 * is_admin: boolean default = false
 * created_at: timestamp default = now()
 
 #### product
 * id: int Primary Key
 * name: varchar
-* description: text
+* description: text -- a json file containing details 
 * price: float or decimal(10,2)
+* for_sale: boolean default = true
 * stock: int
 * image: blob
 * brand: varchar
