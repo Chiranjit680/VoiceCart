@@ -7,6 +7,14 @@
    - get
    - login
 2. **/product** : contains methods for posting/removing product, retrieving information, checking stock, etc.
+   - add product - admin only
+   - view product
+   - check stock
+   - get all products
+   - update product - admin only
+   - delete product - admin only
+   - get categories
+   - add category - admin only
 3. **/cart** : viewing items, adding items, checkout, removing items, etc.
    - add to cart
    - delete from cart
@@ -21,7 +29,13 @@
    - view specific order
    - create order -- only through checkout from cart
 5. **/search** : search for products
-
+6. **/reviews** : add reviews, view reviews, etc.
+   - add review
+   - view review by id
+   - view reviews by product
+   - view reviews by user
+   - delete review - self only
+   - update review - self only
 
 ## Database Schemas
 
