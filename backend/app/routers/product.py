@@ -11,6 +11,12 @@ router = APIRouter(
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.ProductOut)
 def create_product(product: schemas.ProductCreate, categories: List[schemas.CategoryCreate], db: Session = Depends(database.get_db), current_user: schemas.UserOut = Depends(oauth2.get_current_user)): 
+    """
+    Create a new product with associated categories.
+    This function checks if the user is an admin before allowing product creation.
+    It creates a new product and associates it with the provided categories.
+    If a category does not exist, it creates a new category.
+    """
     # Check if the user is an admin
     if not current_user.is_admin:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have permission to create products")
@@ -35,8 +41,14 @@ def create_product(product: schemas.ProductCreate, categories: List[schemas.Cate
     db.commit()
     return new_product
 
+# I don't think this function associates parent categories with products, so it is not needed.
 @router.get("/{id}", response_model=schemas.ProductOut)
 def get_product(id: int, db: Session = Depends(database.get_db), current_user: schemas.UserOut = Depends(oauth2.get_current_user)):
+    """
+    Retrieve a product by its ID.
+    This function fetches a product from the database by its ID and also retrieves its associated categories
+    if the product exists. If the product does not exist, it raises a 404 error.
+    """
     product = db.query(models.Product).filter(models.Product.id == id).first()
     if not product:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
@@ -47,6 +59,12 @@ def get_product(id: int, db: Session = Depends(database.get_db), current_user: s
 
 @router.get("/stock/{id}")
 def get_product_stock(id: int, db: Session = Depends(database.get_db), current_user: schemas.UserOut = Depends(oauth2.get_current_user)):
+    """
+    Retrieve the stock of a product by its ID.
+    This function fetches the stock of a product from the database by its ID.
+    If the product does not exist, it raises a 404 error.
+    It returns the stock quantity of the product.
+    """
     product = db.query(models.Product).filter(models.Product.id == id).first()
     if not product:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
@@ -55,6 +73,12 @@ def get_product_stock(id: int, db: Session = Depends(database.get_db), current_u
 
 @router.get("/", response_model=List[schemas.ProductOut])
 def get_all_products(db: Session = Depends(database.get_db), current_user: schemas.UserOut = Depends(oauth2.get_current_user)): # TODO: add query parameters for filtering, sorting, and pagination
+    """
+    Retrieve all products.
+    This function fetches all products from the database and retrieves their associated categories.
+    It returns a list of products, each with its categories populated.
+    If no products are found, it returns an empty list.
+    """
     products = db.query(models.Product).all()
     for product in products:
         # fetch categories for each product
@@ -64,6 +88,12 @@ def get_all_products(db: Session = Depends(database.get_db), current_user: schem
 
 @router.patch("/{id}", response_model=schemas.ProductOut)
 def update_product(id: int, product: schemas.ProductCreate, db: Session = Depends(database.get_db), current_user: schemas.UserOut = Depends(oauth2.get_current_user)):
+    """
+    Update an existing product by its ID.
+    This function allows an admin user to update the details of a product.
+    It checks if the user is an admin before allowing the update.
+    If the product does not exist, it raises a 404 error.
+    """
     # Check if the user is an admin
     if not current_user.is_admin:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have permission to update products")
@@ -82,6 +112,12 @@ def update_product(id: int, product: schemas.ProductCreate, db: Session = Depend
 
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_product(id: int, db: Session = Depends(database.get_db), current_user: schemas.UserOut = Depends(oauth2.get_current_user)):
+    """
+    Delete a product by its ID.
+    This function allows an admin user to delete a product from the database.
+    It checks if the user is an admin before allowing the deletion.
+    If the product does not exist, it raises a 404 error.
+    """
     # Check if the user is an admin
     if not current_user.is_admin:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have permission to delete products")
@@ -97,11 +133,21 @@ def delete_product(id: int, db: Session = Depends(database.get_db), current_user
 
 @router.get("/categories", response_model=List[schemas.CategoryOut])
 def get_all_categories(db: Session = Depends(database.get_db), current_user: schemas.UserOut = Depends(oauth2.get_current_user)):
+    """
+    Retrieve all product categories.
+    This function fetches all categories from the database.
+    """
     categories = db.query(models.Category).all()
     return categories
 
 @router.post("/categories", status_code=status.HTTP_201_CREATED, response_model=schemas.CategoryOut)
 def create_category(category: schemas.CategoryCreate, db: Session = Depends(database.get_db), current_user: schemas.UserOut = Depends(oauth2.get_current_user)):
+    """
+    Create a new product category.
+    This function allows an admin user to create a new category.
+    It checks if the user is an admin before allowing category creation.
+    If the category already exists, it raises a 400 error.
+    """
     # Check if the user is an admin
     if not current_user.is_admin:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have permission to create categories")
