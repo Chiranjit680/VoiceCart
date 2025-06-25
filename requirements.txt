@@ -14,8 +14,9 @@ httpx
 sqlalchemy
 bcrypt
 jwt
-jose
+python-jose[cryptography]
 oauth2
 mysql-connector-python
 pymysql
 passlib[sha256]
+psycopg2

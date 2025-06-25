@@ -153,6 +153,10 @@ class ReviewOut(BaseModel):
     class Config:
         orm_mode = True
 
+class ProductSearchOut(ProductOut):
+    relevance_score: float
+
+
 # For forward references (self-referencing models)
 User.update_forward_refs()
 CategoryOut.update_forward_refs()
