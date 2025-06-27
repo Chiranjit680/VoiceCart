@@ -14,8 +14,9 @@ def create_order(address: str, total_amount: float, db: Session = Depends(databa
     """
     Create a new order for the current user.
     This function checks if the cart is empty, retrieves items from the cart
-    and reduces the stock of the products accordingly. It then creates an order
-    with the provided address and total amount.
+    and reduces the stock of the products accordingly and increases the order count for each product.
+    It also checks if the products exist and if there is sufficient stock for each product.
+    It then creates an order with the provided address and total amount.
     Raises HTTPException if the cart is empty, if any product is not found,
     or if there is insufficient stock for any product.
     """
@@ -35,6 +36,7 @@ def create_order(address: str, total_amount: float, db: Session = Depends(databa
         
         # Reduce the stock and delete item from cart
         product.stock -= item.quantity
+        product.order_count += item.quantity  # Increment order count for the product
         db.commit()
 
     # Create the order
@@ -43,7 +45,7 @@ def create_order(address: str, total_amount: float, db: Session = Depends(databa
         address=address,
         total_amount=total_amount,
         status="Pending",
-       products=[{"product_id": item.product_id, "quantity": item.quantity} for item in cart_items]  # List of dictionaries# Assuming products is a list of product IDs and quantities
+        products=[{"product_id": item.product_id, "quantity": item.quantity} for item in cart_items]  # List of dictionaries# Assuming products is a list of product IDs and quantities
     )
     
     db.add(new_order)
@@ -101,7 +103,7 @@ def update_order(order_id: int, status: str, db: Session = Depends(database.get_
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid status")
     
     if status == "Cancelled":
-        pass # TODO: add refund logic if needed
+        pass # TODO: add refund logic if needed, update stock of products, and decrement order count for each product
 
     order.status = status
     db.commit()

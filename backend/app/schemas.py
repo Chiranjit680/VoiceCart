@@ -57,6 +57,9 @@ class ProductOut(BaseModel):
     brand_name: Optional[str] = None
     created_at: datetime
     categories: List["CategoryOut"] = []
+    avg_rating: float = 0.0
+    num_reviews: int = 0
+    num_sold: int = 0
 
     class Config:
         orm_mode = True

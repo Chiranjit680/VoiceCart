@@ -12,6 +12,8 @@ router = APIRouter(
 @router.get("/products", response_model=List[schemas.ProductSearchOut]) # TODO: add filtering and pagination
 def search_products(
     query: str,
+    filters: dict = None,  # Placeholder for future filters
+    categories: List[str] = None,  # Placeholder for future categories
     db: Session = Depends(database.get_db),
     current_user: schemas.UserOut = Depends(oauth2.get_current_user)
 ):
@@ -57,7 +59,7 @@ def search_products(
                 relevance += 3
             if word in str(product.description).lower():
                 relevance += 2
-    
+
     results.append(schemas.ProductSearchOut(**product.__dict__, relevance_score=relevance))
-    
+    results.sort(key=lambda x: (x.relevance_score, x.num_sold), reverse=True)    
     return results

@@ -60,6 +60,9 @@
 * image: blob
 * brand: varchar
 * created_at: timestamp default = now()
+* avg_rating : float default = 0.0
+* num_rating : int default = 0
+* num_sold: int default = 0
 
 #### categories
 * id: int Primary Key

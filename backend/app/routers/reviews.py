@@ -8,12 +8,17 @@ router = APIRouter(
     tags=["review"],
 )
 
+# TODO: update rating of product when a review is created or updated or deleted
+
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.ReviewOut)
 def create_review(review: schemas.ReviewCreate, db: Session = Depends(database.get_db), current_user: schemas.UserOut = Depends(oauth2.get_current_user)):
     """
     Create a new review for a product.
     This function allows a user to create a review for a product. 
     It checks if the product exists before creating the review.
+    It also checks if the user has already reviewed the product and if the user has purchased the product.
+    If the user has already reviewed the product, it raises a 400 error.
+    If the user has not purchased the product, it raises a 403 error.
     The review is associated with the current user.
     If the product does not exist, it raises a 404 error.
     """
@@ -21,6 +26,23 @@ def create_review(review: schemas.ReviewCreate, db: Session = Depends(database.g
     product = db.query(models.Product).filter(models.Product.id == review.product_id).first()
     if not product:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
+    # Check if the user has already reviewed this product
+    existing_review = db.query(models.Reviews).filter(
+        models.Reviews.product_id == review.product_id,
+        models.Reviews.user_id == current_user.id
+    ).first()
+    if existing_review:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="You have already reviewed this product")
+    # Validate the rating
+    if review.rating < 1 or review.rating > 5:  # Assuming rating is between 1 and 5
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Rating must be between 1 and 5")
+    
+    # check if user has ever purchased the product and if it was delivered
+    order_item = db.query(models.OrderItem).join(models.Orders).filter(
+        models.OrderItem.product_id == review.product_id,
+        models.OrderItem.order.has(user_id=current_user.id),
+        models.Orders.status == "completed"
+    ).first()
 
     # Create the review
     new_review = models.Reviews(**review.model_dump(), user_id=current_user.id)

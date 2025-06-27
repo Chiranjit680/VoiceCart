@@ -32,9 +32,12 @@ class Product(Base):
     for_sale = Column(Boolean, default=True, nullable=False)
     stock = Column(Integer, default=0, nullable=False)
     # image_url = Column(String, nullable=True, server_default=None)
-    # image = Column(LargeBinary, nullable=True, server_default=None)  # Storing image as BLOB
+    image = Column(LargeBinary, nullable=True, server_default=None)  # Storing image as BLOB
     brand_name = Column(String, nullable=True, server_default=None)
     created_at = Column(TIMESTAMP(timezone=True), server_default=text('now()'))
+    avg_rating = Column(DECIMAL(precision=2, scale=1), default=0.0, nullable=False)  # Average rating of the product
+    num_reviews = Column(Integer, default=0, nullable=False)  # Number of reviews for the product
+    num_sold = Column(Integer, default=0, nullable=False)  # Number of items sold
 
     categories = relationship("ProductCategory", back_populates="product", cascade="all, delete-orphan")
     reviews = relationship("Reviews", back_populates="product", cascade="all, delete-orphan")
