@@ -159,6 +159,10 @@ class ReviewOut(BaseModel):
 class ProductSearchOut(ProductOut):
     relevance_score: float
 
+# --- Chat Schemas ---
+class ChatInput(BaseModel):
+    input_text: str
+
 
 # For forward references (self-referencing models)
 User.update_forward_refs()
