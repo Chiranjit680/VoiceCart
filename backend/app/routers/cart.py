@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from .. import models, schemas, oauth2, database
 from . import orders
+from ..utils import products as product_utils
 
 router = APIRouter(
     prefix="/cart",
@@ -20,7 +21,7 @@ def add_to_cart(cart_item: schemas.CartCreate, db: Session = Depends(database.ge
     """
 
     # Check if the product exists
-    product = db.query(models.Product).filter(models.Product.id == cart_item.product_id).first
+    product = db.query(models.Product).filter(models.Product.id == cart_item.product_id).first()
     if not product:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
     
@@ -67,7 +68,7 @@ def remove_product_from_cart(product_id: int, db: Session = Depends(database.get
     Remove a product from the user's cart by product_id.
     Raises HTTPException if the cart item is not found.
     """
-    cart_item = db.query(models.Cart).filter(models.Cart.product_id == product_id, models.Cart.user_id == current_user.id).all()
+    cart_item = db.query(models.Cart).filter(models.Cart.product_id == product_id, models.Cart.user_id == current_user.id).first()
     if not cart_item:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cart item not found")
     
@@ -76,7 +77,7 @@ def remove_product_from_cart(product_id: int, db: Session = Depends(database.get
     return {"detail": "Product removed from cart"}
 
 @router.patch("/{product_id}", response_model=schemas.CartOut)
-def update_cart_item(product_id: int, cart_item: schemas.CartCreate, db: Session = Depends(database.get_db), current_user: int = Depends(oauth2.get_current_user)):
+def update_cart_item(product_id: int, val: schemas.QuantityUpdate, db: Session = Depends(database.get_db), current_user: int = Depends(oauth2.get_current_user)):
     """
     Update the quantity of a product in the user's cart.
     If the product does not exist in the cart, raises HTTPException.
@@ -87,7 +88,7 @@ def update_cart_item(product_id: int, cart_item: schemas.CartCreate, db: Session
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cart item not found")
     
     # Update the quantity of the existing cart item
-    existing_item.quantity = cart_item.quantity
+    existing_item.quantity = val.quantity
     db.commit()
     db.refresh(existing_item)
     return existing_item
@@ -105,7 +106,7 @@ def get_cart_cost(db: Session = Depends(database.get_db), current_user: int = De
     for item in cart_items:
         product = db.query(models.Product).filter(models.Product.id == item.product_id).first()
         if product:
-            total_cost += product.price * item.quantity
+            total_cost += float(product.price) * item.quantity
         else:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Product with id {item.product_id} not found")
     
@@ -129,7 +130,11 @@ def checkout(address: Optional[str] = None, db: Session = Depends(database.get_d
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cart is empty")
     
     for item in cart_items:
-        if models.product.stock < item.quantity:
+        product = db.query(models.Product).filter(models.Product.id == item.product_id).first()
+        if not product:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Product with id {item.product_id} not found")
+        
+        if product.stock < item.quantity:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Not enough stock for product {item.product_id}")
         
     total_amount = get_cart_cost(db, current_user)

@@ -58,8 +58,8 @@ class Category(Base):
 class ProductCategory(Base):
     __tablename__ = "product_categories"
 
-    product_id = Column(Integer, ForeignKey('products.id'), primary_key=True, nullable=False)
-    category_id = Column(Integer, ForeignKey('categories.id'), primary_key=True, nullable=False)
+    product_id = Column(Integer, ForeignKey('products.id', ondelete='CASCADE'), primary_key=True, nullable=False)
+    category_id = Column(Integer, ForeignKey('categories.id', ondelete='CASCADE'), primary_key=True, nullable=False)
 
     product = relationship("Product", back_populates="categories")
     category = relationship("Category", back_populates="products")

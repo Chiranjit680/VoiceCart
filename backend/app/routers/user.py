@@ -60,9 +60,9 @@ def login(user_credentials: OAuth2PasswordRequestForm = Depends(), db: Session =
     it generates an access token and returns it.
     Raises HTTPException if the user does not exist or if the password is incorrect.
     """
-    user = db.query(models.User).filter(models.User.email == user_credentials.email).first()
+    user = db.query(models.User).filter(models.User.email == user_credentials.username).first()
     if not user:
-        user = db.query(models.User).filter(models.User.phone == user_credentials.email).first()
+        user = db.query(models.User).filter(models.User.phone == user_credentials.username).first()
     
     if not user or not hashing.verify(user_credentials.password, user.password):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid credentials")

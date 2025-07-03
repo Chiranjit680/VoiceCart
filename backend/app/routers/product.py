@@ -2,6 +2,7 @@ from .. import models, schemas, database, oauth2
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
+from ..utils import products as product_utils
 
 
 router = APIRouter(
@@ -39,7 +40,10 @@ def create_product(product: schemas.ProductCreate, categories: List[schemas.Cate
             product_category = models.ProductCategory(product_id=new_product.id, category_id=new_category.id)
         db.add(product_category)
     db.commit()
-    return new_product
+
+    db.refresh(new_product)
+    categories = [pc.category for pc in new_product.categories]
+    return product_utils.add_category(new_product, db)
 
 # I don't think this function associates parent categories with products, so it is not needed.
 @router.get("/{id}", response_model=schemas.ProductOut)
@@ -54,8 +58,8 @@ def get_product(id: int, db: Session = Depends(database.get_db), current_user: s
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
     # fetch categories
     categories = db.query(models.Category).join(models.ProductCategory).filter(models.ProductCategory.product_id == id).all()
-    product.categories = categories
-    return product
+    # product.categories = categories
+    return product_utils.add_category(product, db)
 
 @router.get("/stock/{id}")
 def get_product_stock(id: int, db: Session = Depends(database.get_db), current_user: schemas.UserOut = Depends(oauth2.get_current_user)):
@@ -80,14 +84,15 @@ def get_all_products(db: Session = Depends(database.get_db), current_user: schem
     If no products are found, it returns an empty list.
     """
     products = db.query(models.Product).all()
+    res = []
     for product in products:
         # fetch categories for each product
         categories = db.query(models.Category).join(models.ProductCategory).filter(models.ProductCategory.product_id == product.id).all()
-        product.categories = categories
-    return products
+        res.append(product_utils.add_category(product, db))
+    return res
 
 @router.patch("/{id}", response_model=schemas.ProductOut)
-def update_product(id: int, product: schemas.ProductCreate, db: Session = Depends(database.get_db), current_user: schemas.UserOut = Depends(oauth2.get_current_user)):
+def update_product(id: int, product: schemas.ProductUpdate, db: Session = Depends(database.get_db), current_user: schemas.UserOut = Depends(oauth2.get_current_user)):
     """
     Update an existing product by its ID.
     This function allows an admin user to update the details of a product.
@@ -102,13 +107,13 @@ def update_product(id: int, product: schemas.ProductCreate, db: Session = Depend
     if not existing_product:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
     
-    for key, value in product.model_dump().items():
+    for key, value in product.model_dump(exclude_unset=True).items():
         setattr(existing_product, key, value)
     
     db.commit()
     db.refresh(existing_product)
     
-    return existing_product
+    return product_utils.add_category(existing_product, db)
 
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_product(id: int, db: Session = Depends(database.get_db), current_user: schemas.UserOut = Depends(oauth2.get_current_user)):
@@ -130,30 +135,3 @@ def delete_product(id: int, db: Session = Depends(database.get_db), current_user
     db.commit()
     
     return {"detail": "Product deleted successfully"}
-
-@router.get("/categories", response_model=List[schemas.CategoryOut])
-def get_all_categories(db: Session = Depends(database.get_db), current_user: schemas.UserOut = Depends(oauth2.get_current_user)):
-    """
-    Retrieve all product categories.
-    This function fetches all categories from the database.
-    """
-    categories = db.query(models.Category).all()
-    return categories
-
-@router.post("/categories", status_code=status.HTTP_201_CREATED, response_model=schemas.CategoryOut)
-def create_category(category: schemas.CategoryCreate, db: Session = Depends(database.get_db), current_user: schemas.UserOut = Depends(oauth2.get_current_user)):
-    """
-    Create a new product category.
-    This function allows an admin user to create a new category.
-    It checks if the user is an admin before allowing category creation.
-    If the category already exists, it raises a 400 error.
-    """
-    # Check if the user is an admin
-    if not current_user.is_admin:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have permission to create categories")
-       
-    new_category = models.Category(**category.model_dump())
-    db.add(new_category)
-    db.commit()
-    db.refresh(new_category)
-    return new_category

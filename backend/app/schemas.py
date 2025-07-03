@@ -1,5 +1,5 @@
 from typing import List, Optional, Dict
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from datetime import datetime
 
 # --- Token Schemas ---
@@ -13,7 +13,7 @@ class TokenData(BaseModel):
 # --- User Schemas ---
 class UserCreate(BaseModel):
     name: str
-    email: str
+    email: EmailStr
     password: str
     phone: Optional[str] = None
     address: Optional[str] = None
@@ -45,6 +45,17 @@ class ProductCreate(BaseModel):
     for_sale: Optional[bool] = True
     stock: Optional[int] = 0
     brand_name: Optional[str] = None
+    image: Optional[bytes] = None 
+
+class ProductUpdate(BaseModel):
+    name: Optional[str] = "None"
+    description: Optional[str] = None
+    specs: Optional[Dict[str, str]] = None  # JSON field
+    price: Optional[float] = 0.0
+    for_sale: Optional[bool] = True
+    stock: Optional[int] = 0
+    brand_name: Optional[str] = None
+    image: Optional[bytes] = None 
 
 class ProductOut(BaseModel):
     id: int
@@ -60,6 +71,25 @@ class ProductOut(BaseModel):
     avg_rating: float = 0.0
     num_reviews: int = 0
     num_sold: int = 0
+    image: Optional[bytes] = None  # Assuming image is stored as bytes
+
+    class Config:
+        orm_mode = True
+
+class ProductOutNoCategory(BaseModel):
+    id: int
+    name: str
+    description: Optional[str] = None
+    specs: Optional[Dict[str, str]] = None 
+    price: float
+    for_sale: bool
+    stock: int
+    brand_name: Optional[str] = None
+    created_at: datetime
+    avg_rating: float = 0.0
+    num_reviews: int = 0
+    num_sold: int = 0
+    image: Optional[bytes] = None  # Assuming image is stored as bytes
 
     class Config:
         orm_mode = True
@@ -99,7 +129,7 @@ class CartOut(BaseModel):
     user_id: int
     product_id: int
     quantity: int
-    product: Optional[ProductOut] = None
+    product: Optional[ProductOutNoCategory] = None
 
     class Config:
         orm_mode = True
@@ -115,7 +145,7 @@ class OrderItemOut(BaseModel):
     product_id: int
     quantity: int
     price: float
-    product: Optional[ProductOut] = None
+    product: Optional[ProductOutNoCategory] = None
 
     class Config:
         orm_mode = True
@@ -158,6 +188,14 @@ class ReviewOut(BaseModel):
 
 class ProductSearchOut(ProductOut):
     relevance_score: float
+
+# Misc
+class QuantityUpdate(BaseModel):
+    quantity: int
+
+class OrderUpdate(BaseModel):
+    status: Optional[str]  # e.g., "Pending", "Shipped", "Delivered", "Cancelled"
+    address: Optional[str] = None  # Optional, can be updated later
 
 
 # For forward references (self-referencing models)

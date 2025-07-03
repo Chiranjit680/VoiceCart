@@ -1,10 +1,11 @@
-from .. import db, models, schemas
+from .. import database, models, schemas
 from typing import List, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_
 from fastapi import HTTPException, status
 import json
 
+# TODO fix it: none of the features work
 def filter_products(products: List[schemas.ProductSearchOut],
                     categories: Optional[List[str]] = None,
                     dict: Optional[dict] = None
@@ -15,15 +16,25 @@ def filter_products(products: List[schemas.ProductSearchOut],
 
     results = []
     for product in products:
-        if any(cat not in product.categories for cat in categories or []):
-            continue
-
-        description = product.description or ""
-        description = json.dumps(description.lower())
 
         flag: bool = True
 
+        for cat in categories or []:
+            if cat not in [category.name for category in product.categories]:
+                flag = False
+                break
+
+        description = product.specs or ""
+        # if isinstance(description, str):
+        #     try:
+        #         description = json.loads(description.lower())
+        #     except Exception:
+        #         description = {}
+        # elif not isinstance(description, dict):
+        #     description = {}
+
         for key, value in (dict or {}).items():
+            print(f"Checking {key} with value {value} for product {product.name}")
             if key.endswith("_low") and key[:-4] in product.model_dump():
                 if product.model_dump()[key[:-4]] < value:
                     flag = False
@@ -36,12 +47,17 @@ def filter_products(products: List[schemas.ProductSearchOut],
                 if product.model_dump()[key[:-7]] != value:
                     flag = False
                     break
+            elif key.endswith("_contains") and key[:-9] in product.model_dump():
+                if value not in product.model_dump()[key[:-9]]:
+                    flag = False
+                    break
+
             elif key.endswith("_low") and key[:-4] in description.keys():
-                if description[key[:-4]] < value:
+                if float(description[key[:-4]]) < value:
                     flag = False
                     break
             elif key.endswith("_high") and key[:-5] in description.keys():
-                if description[key[:-5]] > value:
+                if float(description[key[:-5]]) > value:
                     flag = False
                     break
             elif key.endswith("_exact") and key[:-7] in description.keys():
