@@ -292,7 +292,7 @@ def initialize_cart_manager_agent(api_key: Optional[str] = None, model: str = "g
 # -------------------------------
 # 🎯 Usage Example
 # -------------------------------
-def chat_with_voicecart(user_input: str, user_id: int, agent_executor: AgentExecutor) -> Dict[str, Any]:
+def run_cart_manager(user_input: str, user_id: int, agent_executor: AgentExecutor) -> Dict[str, Any]:
     """
     Process user input through the VoiceCart agent.
     

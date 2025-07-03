@@ -197,6 +197,10 @@ class OrderUpdate(BaseModel):
     status: Optional[str]  # e.g., "Pending", "Shipped", "Delivered", "Cancelled"
     address: Optional[str] = None  # Optional, can be updated later
 
+# --- Chat Schemas ---
+class ChatInput(BaseModel):
+    input_text: str
+
 
 # For forward references (self-referencing models)
 User.update_forward_refs()
