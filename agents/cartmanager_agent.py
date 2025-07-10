@@ -3,7 +3,7 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.tools import tool
 from langchain.agents import AgentExecutor, create_react_agent
 from langchain_google_genai import ChatGoogleGenerativeAI
-
+from keyword_generator_agent import generate_keywords
 import json
 import logging
 import sys
@@ -114,62 +114,93 @@ def agent_cart_adder(cart_item: str, user_id: int) -> str:
     except Exception as e:
         logger.error(f"Error adding to cart: {e}")
         return json.dumps({"error": str(e), "success": False})
-@tool 
+@tool
 def agent_search_product(product_name: str) -> str:
     """
-    Search for products by name.
-    
+    Search for products by name using enhanced keyword search.
+
     Args:
         product_name: Name of the product to search for
-        
+
     Returns:
         JSON string with search results
     """
+    # ✅ Normalize input if it's a JSON string
+    if isinstance(product_name, dict):
+        product_name = product_name.get("product_name", "").strip()
+    elif isinstance(product_name, str) and product_name.strip().startswith("{"):
+        try:
+            parsed = json.loads(product_name)
+            product_name = parsed.get("product_name", "").strip()
+        except json.JSONDecodeError:
+            pass  # Leave as-is
+
     try:
         db = get_db_session()
         try:
-            # Search products by name first
-            results = db.query(models.Product).filter(
-                models.Product.name.ilike(f"%{product_name}%")
-            ).filter(
-                models.Product.for_sale == True
-            ).limit(10).all()
-            
+            # First, search with the original product name
+            results = search_products(query=product_name, db=db)
+
+            # If no results found, try with generated keywords
             if not results:
-                return json.dumps({"error": "No products found", "success": False})
-            
-            # Convert products to dictionary format
-            products = []
+                try:
+                    print(f"No direct results for '{product_name}', trying keywords...")
+                    keywords = generate_keywords(product_name)
+
+                    for keyword in keywords[:10]:  # Limit to 10 keywords
+                        if keyword and len(keyword.strip()) > 2:
+                            if isinstance(keyword, str) and keyword.strip().startswith("{"):
+                                keyword = json.loads(keyword).get("product_name", keyword)
+                            print(f"Searching for keyword: {keyword}")
+                            keyword_results = search_products(query=keyword.strip(), db=db)
+                            if keyword_results:
+                                results.extend(keyword_results)
+                                if len(results) >= 10:
+                                    break
+                except Exception as keyword_error:
+                    print(f"Keyword generation failed: {keyword_error}")
+
+            if not results:
+                return json.dumps({
+                    "error": f"No products found for '{product_name}'",
+                    "success": False,
+                    "suggestion": "Try searching with different keywords like 'apple', 'milk', 'bread', etc."
+                })
+
+            # Deduplicate by product ID
+            seen_ids = set()
+            unique_results = []
             for product in results:
-                # Handle JSON description safely
-                description_text = "No description available"
-                if product.description:
-                    if isinstance(product.description, dict):
-                        # If it's already a dict (JSON), extract text
-                        description_text = product.description
-                    else:
-                        # If it's a string
-                        description_text = str(product.description)
-                
-                product_dict = {
+                if product.id not in seen_ids:
+                    unique_results.append(product)
+                    seen_ids.add(product.id)
+
+            products = []
+            for product in unique_results[:10]:
+                products.append({
                     "id": product.id,
                     "name": product.name,
-                    "description": description_text,
+                    "description": str(product.description)[:100] + "..." if product.description else "No description",
                     "price": float(product.price),
                     "stock": product.stock,
-                    "brand_name": product.brand_name,
+                    "brand_name": getattr(product, 'brand_name', 'Unknown'),
                     "for_sale": product.for_sale
-                }
-                products.append(product_dict)
-            
-            return json.dumps({"products": products, "success": True})
-            
+                })
+
+            return json.dumps({
+                "products": products,
+                "success": True,
+                "count": len(products),
+                "search_term": product_name
+            })
+
         finally:
             db.close()
-            
+
     except Exception as e:
-        logger.error(f"Error searching for product: {e}")
+        logger.error(f"Error searching for product '{product_name}': {e}")
         return json.dumps({"error": str(e), "success": False})
+
 
 @tool
 def agent_update_cart_item(product_id: int, cart_item: str, user_id: int) -> str:
@@ -321,7 +352,8 @@ Your capabilities include:
 IMPORTANT GUIDELINES:
 - Always be helpful, friendly, and conversational
 - When users mention products without specific IDs, use the search tool first to find products
-- After searching, present the options to the user and ask them to choose
+- After searching, present the options  if the user asked to search for products if not directly add to cart the first result
+-When the user asks to add a product,directly add the first result to the cart 
 - When users mention products, ask for clarification if needed (product ID, quantity, etc.)
 - For cart operations, ensure you have the user_id (this should be provided in the context)
 - Handle errors gracefully and provide clear feedback
@@ -469,7 +501,7 @@ def test_cart_manager():
     test_cases = [
         # "Show me my current cart",
         "Add 2 apples to my cart",
-        "Add 1 milk carton  to my cart",
+        # "Add 1 milk carton  to my cart",
         # "Add 1 milk carton with product ID 5 to my cart",
         # "Update the quantity of product 5 to 3 items",
         # "Remove product 2 from my cart",

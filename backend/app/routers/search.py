@@ -1,9 +1,9 @@
 from time import sleep
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import or_, and_
 from sqlalchemy.orm import Session
 from .. import models, schemas, database, oauth2
-from typing import List
+from typing import List, Optional
 from ..utils import filter as filter_utils, products as product_utils   
 
 router = APIRouter(
@@ -11,99 +11,105 @@ router = APIRouter(
     tags=["search"],
 )
 
-@router.get("/products", response_model=List[schemas.ProductSearchOut]) # TODO: add filtering and pagination
-def search_products(
-    query: str,
-    filters: dict = None,  # Placeholder for future filters
-    categories: List[str] = None,  # Placeholder for future categories
-    db: Session = Depends(database.get_db),
-    current_user: schemas.UserOut = Depends(oauth2.get_current_user)
-):
-    if not query:
-        raise HTTPException(status_code=400, detail="Query parameter is required")
+def search_products(query: str, db: Session, limit: int = 20) -> List[models.Product]:
+    """
+    Search for products by name, description, or brand.
     
-    query = query.strip().lower()
-    if not query:
-        raise HTTPException(status_code=400, detail="Query cannot be empty")
-    
-    matched_products = []
-    
-    for word in query.split():
-        word = word.strip()
-        if not word:
-            continue
+    Args:
+        query: Search term
+        db: Database session
+        limit: Maximum number of results
         
-        # Search for products matching the word in name, description, or brand_name
-        matched_products = db.query(models.Product).filter(
+    Returns:
+        List of Product models (not ProductOut schemas)
+    """
+    try:
+        # Search in products table
+        product_results = db.query(models.Product).filter(
             or_(
-                models.Product.name.ilike(f"%{word}%"),
-                models.Product.description.ilike(f"%{word}%"),
-                models.Product.brand_name.ilike(f"%{word}%")
-                )).all()
-        
-        # Matches in categories
-        cat_list = db.query(models.Category).filter(
+                models.Product.name.ilike(f"%{query}%"),
+                models.Product.description.ilike(f"%{query}%"),
+                models.Product.brand_name.ilike(f"%{query}%")
+            ),
+            models.Product.for_sale == True
+        ).limit(limit).all()
+
+        # Search in categories and get related products
+        category_results = db.query(models.Category).filter(
             or_(
-                models.Category.name.ilike(f"%{word}%"),
-                models.Category.parent_id.in_(
-                    db.query(models.Category.id).filter(models.Category.name.ilike(f"%{word}%"))
-                )
+                models.Category.name.ilike(f"%{query}%")
             )
         ).all()
 
-        # list of products in matched categories
-        cat_prod_list = db.query(models.ProductCategory).filter(
-            models.ProductCategory.category_id.in_([cat.id for cat in cat_list])
-        ).all()
-
-        # Extend matched products with those in matched categories
-        matched_products.extend(
-            db.query(models.Product).filter(
-                models.Product.id.in_([pc.product_id for pc in cat_prod_list])
-            ).all()
-        )
-
-    # Remove duplicates while preserving order
-    matched_products = list({product.id: product for product in matched_products}.values()) # dict comprehension to remove duplicates
-    
-    if not matched_products:
-        raise HTTPException(status_code=404, detail="No products found matching the query")
-    
-    results: List[schemas.ProductSearchOut] = []
-
-    for word in query.split():
-        word = word.strip()
-        if not word:
-            continue
-
-        for product in matched_products:
-            relevance = 0
-            if word in product.name.lower():
-                relevance += 10
-            if word in (product.brand_name or "").lower():
-                relevance += 6
-            if word in str(product.description).lower():
-                relevance += 2
-            if word in str(product.specs).lower():
-                relevance += 1
+        # Get products from matching categories
+        if category_results:
+            category_ids = [cat.id for cat in category_results]
             
-            # Check if the word matches any category name
-            # TODO check here
-            product_data = product_utils.add_category(product, db)
+            category_products = db.query(models.Product).join(
+                models.ProductCategory
+            ).filter(
+                models.ProductCategory.category_id.in_(category_ids),
+                models.Product.for_sale == True
+            ).limit(limit).all()
+            
+            # Combine results and remove duplicates
+            all_products = product_results + category_products
+            seen_ids = set()
+            unique_products = []
+            
+            for product in all_products:
+                if product.id not in seen_ids:
+                    unique_products.append(product)
+                    seen_ids.add(product.id)
+            
+            return unique_products[:limit]
+        
+        return product_results
+        
+    except Exception as e:
+        print(f"Search error: {e}")
+        return []
 
-
-            if any(word in cat.name.lower() for cat in product_data.categories):
-                relevance += 4
-
-            # results.append(schemas.ProductSearchOut(**product_data, relevance_score=relevance))
-            results.append(schemas.ProductSearchOut(
-                **product_data.model_dump(),
-                relevance_score=relevance
-            ))
-
-    # Apply filters if provided
-    if filters or categories:
-        results = filter_utils.filter_products(results, categories=categories, dict=filters)
-
-    results.sort(key=lambda x: (x.relevance_score, x.num_sold), reverse=True)
-    return results
+@router.get("/", response_model=List[schemas.ProductOut])
+def search_products_endpoint(
+    q: str = Query(..., min_length=1, description="Search query"),
+    limit: int = Query(default=20, le=100),
+    db: Session = Depends(database.get_db)
+):
+    """Search for products endpoint"""
+    try:
+        products = search_products(query=q, db=db, limit=limit)
+        
+        # Convert to ProductOut schema safely
+        result = []
+        for product in products:
+            try:
+                # Create a safe dictionary without problematic fields
+                product_dict = {
+                    "id": product.id,
+                    "name": product.name,
+                    "description": product.description,
+                    "price": product.price,
+                    "for_sale": product.for_sale,
+                    "stock": product.stock,
+                    "image": product.image,
+                    "brand_name": product.brand_name,
+                    "created_at": product.created_at,
+                    "avg_rating": product.avg_rating,
+                    "num_reviews": product.num_reviews,
+                    "num_sold": product.num_sold,
+                    "specs": product.specs if hasattr(product, 'specs') else {}
+                }
+                
+                # Create ProductOut from dict
+                product_out = schemas.ProductOut(**product_dict)
+                result.append(product_out)
+                
+            except Exception as conversion_error:
+                print(f"Error converting product {product.id}: {conversion_error}")
+                continue
+        
+        return result
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")

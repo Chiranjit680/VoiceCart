@@ -1,4 +1,4 @@
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
 
@@ -61,20 +61,20 @@ class ProductOut(BaseModel):
     id: int
     name: str
     description: Optional[str] = None
-    specs: Optional[Dict[str, str]] = None 
+    specs: Optional[Dict[str, Any]] = None  # Changed from specific typing to Any
     price: float
     for_sale: bool
     stock: int
+    image: Optional[str] = None
     brand_name: Optional[str] = None
     created_at: datetime
-    categories: List["CategoryOut"] = []
-    avg_rating: float = 0.0
-    num_reviews: int = 0
-    num_sold: int = 0
-    image: Optional[bytes] = None  # Assuming image is stored as bytes
+    avg_rating: Optional[float] = None
+    num_reviews: Optional[int] = None
+    num_sold: Optional[int] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
+        arbitrary_types_allowed = True  # Allow flexible types
 
 class ProductOutNoCategory(BaseModel):
     id: int

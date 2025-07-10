@@ -1,20 +1,26 @@
 from pydantic_settings import BaseSettings
+from pydantic import Field
 
 class Settings(BaseSettings):
-    secret_key: str
-    algorithm: str
-    access_token_expire_minutes: int
-    database_url:str
-    database_hostname: str
-    database_port: str
-    database_username: str
-    database_password: str
-    database_name: str
-    GEMINI_API_KEY: str
-
+    # Database settings
+    database_hostname: str = Field(default="localhost")
+    database_port: str = Field(default="5432")
+    database_password: str = Field(default="unlockit")
+    database_name: str = Field(default="VoiceCart")
+    database_username: str = Field(default="postgres")
+    database_url: str = Field(
+        default="postgresql+psycopg2://postgres:unlockit@localhost:5432/VoiceCart"
+    )
+    
+    # JWT settings
+    secret_key: str = Field(default="your-secret-key-here")
+    algorithm: str = Field(default="HS256")
+    access_token_expire_minutes: int = Field(default=30)
+    
+    # Remove redis_url completely if not needed
+    
     class Config:
         env_file = ".env"
-        env_file_encoding = "utf-8"
-        
+        extra = "ignore"
 
 settings = Settings()
