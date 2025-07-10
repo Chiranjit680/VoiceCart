@@ -12,7 +12,7 @@ class User(Base):
     name = Column(String, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)
     password = Column(String, nullable=False)
-    phone = Column(String, unique=True, index=True, nullable=True, server_default=None) # in development phase, this field is set to be nullable
+    phone = Column(String, unique=True, index=True, nullable=True, server_default=None)
     address = Column(String, nullable=True, server_default=None)
     is_admin = Column(Boolean, default=False, nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), server_default=text('now()'))
@@ -20,6 +20,7 @@ class User(Base):
     orders = relationship("Orders", back_populates="user", cascade="all, delete-orphan")
     cart = relationship("Cart", back_populates="user", cascade="all, delete-orphan")
     reviews = relationship("Reviews", back_populates="user", cascade="all, delete-orphan")
+    chat_messages = relationship("ChatMessage", back_populates="user", cascade="all, delete-orphan")  # Add this line
 
 class Product(Base):
     __tablename__ = "products"

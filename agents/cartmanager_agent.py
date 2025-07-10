@@ -3,20 +3,67 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.tools import tool
 from langchain.agents import AgentExecutor, create_react_agent
 from langchain_google_genai import ChatGoogleGenerativeAI
-from backend.app import schemas, database
-from backend.app.routers.cart import (
-    add_to_cart,
-    update_cart_item,
-    remove_product_from_cart,
-    get_cart,
-    checkout,
-    get_user_by_id  # you need to define this helper
-)
+
 import json
 import logging
+import sys
+from dotenv import load_dotenv
+import os
+load_dotenv()
+# Fix the path - go up to VoiceCart, then access backend
+current_file = os.path.abspath(__file__)
+agents_dir = os.path.dirname(current_file)  # agents directory
+voicecart_dir = os.path.dirname(agents_dir)  # VoiceCart directory
+project_root = os.path.dirname(voicecart_dir)  # Root directory containing VoiceCart
+
+# Add both paths to sys.path
+if voicecart_dir not in sys.path:
+    sys.path.insert(0, voicecart_dir)
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+# Now import with the correct relative path
+try:
+    from backend.app import schemas, database, models
+    from backend.app.routers.cart import (
+        add_to_cart,
+        update_cart_item,
+        remove_product_from_cart,
+        get_cart,
+        checkout
+    )
+    from backend.app.routers.search import search_products
+except ModuleNotFoundError:
+    # Alternative import path if the above doesn't work
+    try:
+        from VoiceCart.backend.app import schemas, database, models
+        from VoiceCart.backend.app.routers.cart import (
+            add_to_cart,
+            update_cart_item,
+            remove_product_from_cart,
+            get_cart,
+            checkout
+        )
+    except ModuleNotFoundError as e:
+        print(f"Import error: {e}")
+        print(f"Current directory: {os.getcwd()}")
+        print(f"File location: {current_file}")
+        print(f"Agents directory: {agents_dir}")
+        print(f"VoiceCart directory: {voicecart_dir}")
+        print(f"Project root: {project_root}")
+        raise ImportError("Could not import required modules. Check your directory structure.")
 
 # Setup logging
 logger = logging.getLogger(__name__)
+
+# Add the missing get_user_by_id function
+def get_user_by_id(user_id: int, db):
+    """Helper function to get user by ID"""
+    try:
+        return db.query(models.User).filter(models.User.id == user_id).first()
+    except Exception as e:
+        logger.error(f"Error getting user by ID {user_id}: {e}")
+        return None
 
 # -------------------------------
 # 🛠️ Agent Tools
@@ -66,6 +113,62 @@ def agent_cart_adder(cart_item: str, user_id: int) -> str:
         return json.dumps({"error": f"Invalid JSON format: {e}", "success": False})
     except Exception as e:
         logger.error(f"Error adding to cart: {e}")
+        return json.dumps({"error": str(e), "success": False})
+@tool 
+def agent_search_product(product_name: str) -> str:
+    """
+    Search for products by name.
+    
+    Args:
+        product_name: Name of the product to search for
+        
+    Returns:
+        JSON string with search results
+    """
+    try:
+        db = get_db_session()
+        try:
+            # Search products by name first
+            results = db.query(models.Product).filter(
+                models.Product.name.ilike(f"%{product_name}%")
+            ).filter(
+                models.Product.for_sale == True
+            ).limit(10).all()
+            
+            if not results:
+                return json.dumps({"error": "No products found", "success": False})
+            
+            # Convert products to dictionary format
+            products = []
+            for product in results:
+                # Handle JSON description safely
+                description_text = "No description available"
+                if product.description:
+                    if isinstance(product.description, dict):
+                        # If it's already a dict (JSON), extract text
+                        description_text = product.description
+                    else:
+                        # If it's a string
+                        description_text = str(product.description)
+                
+                product_dict = {
+                    "id": product.id,
+                    "name": product.name,
+                    "description": description_text,
+                    "price": float(product.price),
+                    "stock": product.stock,
+                    "brand_name": product.brand_name,
+                    "for_sale": product.for_sale
+                }
+                products.append(product_dict)
+            
+            return json.dumps({"products": products, "success": True})
+            
+        finally:
+            db.close()
+            
+    except Exception as e:
+        logger.error(f"Error searching for product: {e}")
         return json.dumps({"error": str(e), "success": False})
 
 @tool
@@ -195,7 +298,8 @@ tools = [
     agent_update_cart_item,
     agent_delete_cart_item,
     agent_get_cart,
-    agent_order
+    agent_order,
+    agent_search_product
 ]
 
 # -------------------------------
@@ -207,19 +311,28 @@ prompt = PromptTemplate(
 You are VoiceCart, an intelligent shopping assistant that helps users manage their shopping experience through natural conversation.
 
 Your capabilities include:
-1. 🛒 Add items to cart - Help users add products with proper quantities
-2. ✏️ Update cart items - Modify quantities or product details
-3. 🗑️ Remove items from cart - Delete unwanted products
-4. 👀 View cart contents - Show current cart with totals
-5. 🚚 Process checkout - Handle order placement with delivery details
+1. 🔍 Search products - Find products by name or description
+2. 🛒 Add items to cart - Help users add products with proper quantities
+3. ✏️ Update cart items - Modify quantities or product details
+4. 🗑️ Remove items from cart - Delete unwanted products
+5. 👀 View cart contents - Show current cart with totals
+6. 🚚 Process checkout - Handle order placement with delivery details
 
 IMPORTANT GUIDELINES:
 - Always be helpful, friendly, and conversational
+- When users mention products without specific IDs, use the search tool first to find products
+- After searching, present the options to the user and ask them to choose
 - When users mention products, ask for clarification if needed (product ID, quantity, etc.)
 - For cart operations, ensure you have the user_id (this should be provided in the context)
 - Handle errors gracefully and provide clear feedback
 - For checkout, confirm the address and total amount before processing
 - Use natural language responses, not just technical outputs
+
+WORKFLOW FOR ADDING PRODUCTS:
+1. If user mentions a product name (like "apple", "milk", etc.), first search for it
+2. Present the search results with product IDs, names, and prices
+3. Ask the user to specify which product they want and the quantity
+4. Then add the selected product to cart using the product ID
 
 Available tools: {tools}
 
@@ -241,7 +354,7 @@ Current user request: {input}
 # -------------------------------
 # 🤖 Agent Initializer
 # -------------------------------
-def initialize_cart_manager_agent(api_key: Optional[str] = None, model: str = "gemini-pro") -> AgentExecutor:
+def initialize_cart_manager_agent(api_key: Optional[str] = None, model: str = "gemini-2.5-flash") -> AgentExecutor:
     """
     Initialize the VoiceCart agent with proper configuration.
     
@@ -328,3 +441,62 @@ def run_cart_manager(user_input: str, user_id: int, agent_executor: AgentExecuto
 # Example usage:
 # agent = initialize_cart_manager_agent()
 # result = chat_with_voicecart("Add 2 iPhone 14s to my cart", user_id=123, agent_executor=agent)
+
+# test_cartmanager.py
+import os
+from dotenv import load_dotenv
+from agents.cartmanager_agent import initialize_cart_manager_agent, run_cart_manager
+
+# Load environment variables
+load_dotenv()
+
+def test_cart_manager():
+    """Test the cart manager agent with various scenarios"""
+    
+    # Initialize the agent
+    api_key=os.getenv("GEMINI_API_KEY")
+    try:
+        agent = initialize_cart_manager_agent(api_key=api_key)
+        print("✅ Agent initialized successfully")
+    except Exception as e:
+        print(f"❌ Failed to initialize agent: {e}")
+        return
+    
+    # Test user ID (replace with a valid user ID from your database)
+    test_user_id = 1
+    
+    # Test scenarios
+    test_cases = [
+        # "Show me my current cart",
+        "Add 2 apples to my cart",
+        "Add 1 milk carton  to my cart",
+        # "Add 1 milk carton with product ID 5 to my cart",
+        # "Update the quantity of product 5 to 3 items",
+        # "Remove product 2 from my cart",
+        # "I want to checkout with delivery to 123 Main St, total $25.50"
+    ]
+    
+    print("\n🧪 Running test cases...")
+    print("=" * 50)
+    
+    for i, test_input in enumerate(test_cases, 1):
+        print(f"\n🔍 Test {i}: {test_input}")
+        print("-" * 30)
+        
+        try:
+            result = run_cart_manager(test_input, test_user_id, agent)
+            
+            if result["success"]:
+                print(f"✅ Response: {result['response']}")
+                if result.get("intermediate_steps"):
+                    print(f"📝 Steps taken: {len(result['intermediate_steps'])} actions")
+            else:
+                print(f"❌ Error: {result.get('error', 'Unknown error')}")
+                
+        except Exception as e:
+            print(f"❌ Exception: {e}")
+        
+        print("-" * 30)
+
+if __name__ == "__main__":
+    test_cart_manager()
