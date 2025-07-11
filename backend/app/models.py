@@ -1,4 +1,5 @@
-from sqlalchemy import Boolean, Column, Integer, String, ForeignKey, JSON, DECIMAL, LargeBinary
+import enum
+from sqlalchemy import Boolean, Column, Integer, String, ForeignKey, JSON, Enum, DECIMAL, LargeBinary
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql.expression import text
 from sqlalchemy.sql.sqltypes import TIMESTAMP
@@ -112,29 +113,19 @@ class Reviews(Base):
     user = relationship("User", back_populates="reviews")
     product = relationship("Product", back_populates="reviews")
 
-
+class SenderType(enum.Enum):
+    USER = "user"
+    AGENT = "agent"
 class ChatMessage(Base):
     __tablename__ = "chat_messages"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True, nullable=False)
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    content = Column(String, nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)   
+    sender = Column(Enum(SenderType), nullable=False)
+    message = Column(String, nullable=False)
+
     created_at = Column(TIMESTAMP(timezone=True), server_default=text('now()'))
 
     user = relationship("User", back_populates="chat_messages")
 
 
-
-class AgentResponse(Base):
-    __tablename__ = "agent_responses"
-
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True, nullable=False)
-    type = Column(String, nullable=False)
-    text_content = Column(String, nullable=False)
-    structured_data = Column(JSON, nullable=True)
-    timestamp = Column(TIMESTAMP(timezone=True), server_default=text('now()'))
-    agent_type = Column(String, nullable=False)
-
-    requires_feedback = Column(Boolean, default=False)
-    conversation_id = Column(String, nullable=False)
-    conversation_ended = Column(Boolean, default=False)
