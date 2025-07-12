@@ -20,3 +20,12 @@ mysql-connector-python
 pymysql
 passlib[sha256]
 psycopg2
+
+easyocr
+opencv-python
+matplotlib
+tensorflow
+numpy
+pillow
+tqdm
+nltk
